@@ -23,6 +23,11 @@ A Laravel 12 backend system that aggregates news articles from multiple news sou
 
 ### 1. Clone and Install Dependencies
 
+```sh
+
+git clone https://github.com/kingjokes/news-aggregator.git
+```
+
 ```bash
 composer install
 cp .env.example .env
