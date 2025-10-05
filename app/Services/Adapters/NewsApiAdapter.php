@@ -23,6 +23,7 @@ class NewsApiAdapter implements NewsSourceAdapter
     public function fetchArticles(int $limit = 100): array
     {
         try {
+            // Fetch headlines news
             $response = $this->client->get("{$this->baseUrl}/top-headlines", [
                 'query' => [
                     'apiKey' => $this->apiKey,
@@ -31,13 +32,16 @@ class NewsApiAdapter implements NewsSourceAdapter
                 ]
             ]);
 
+            // Decode JSON data
             $data = json_decode($response->getBody()->getContents(), true);
 
+            //Check status and log if error
             if ($data['status'] !== 'ok') {
                 Log::warning('NewsAPI returned non-ok status', ['response' => $data]);
                 return [];
             }
 
+            //Transform and return articles
             return array_map(function ($article) {
                 return $this->transformArticle($article);
             }, $data['articles'] ?? []);
@@ -59,6 +63,7 @@ class NewsApiAdapter implements NewsSourceAdapter
         return 'NewsAPI';
     }
 
+    //Transforms raw NewsAPI article data into usable format.
     private function transformArticle(array $article): array
     {
         return [

@@ -23,6 +23,8 @@ class GuardianAdapter implements NewsSourceAdapter
     public function fetchArticles(int $limit = 100): array
     {
         try {
+
+            //fetch news
             $response = $this->client->get("{$this->baseUrl}/search", [
                 'query' => [
                     'api-key' => $this->apiKey,
@@ -33,13 +35,16 @@ class GuardianAdapter implements NewsSourceAdapter
                 ]
             ]);
 
+            //decode data
             $data = json_decode($response->getBody()->getContents(), true);
 
+            //if error log data
             if ($data['response']['status'] !== 'ok') {
                 Log::warning('Guardian API returned non-ok status', ['response' => $data]);
                 return [];
             }
 
+               //Transform and return articles
             return array_map(function ($article) {
                 return $this->transformArticle($article);
             }, $data['response']['results'] ?? []);
@@ -56,15 +61,19 @@ class GuardianAdapter implements NewsSourceAdapter
         }
     }
 
+    //default source name
     public function getSourceName(): string
     {
         return 'The Guardian';
     }
 
+
+    //Transforms raw Guardian article data into standardized format.
     private function transformArticle(array $article): array
     {
         $author = 'The Guardian';
         if (!empty($article['tags'])) {
+            //Extract author from contributor tags
             $contributors = array_filter($article['tags'], fn($tag) => $tag['type'] === 'contributor');
             if (!empty($contributors)) {
                 $author = reset($contributors)['webTitle'];

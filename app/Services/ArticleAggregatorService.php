@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
+/**
+ * Service for aggregating articles from registered news source adapters.
+ * Fetches, transforms, and stores articles in the database with source/category management.
+ */
 class ArticleAggregatorService
 {
     private array $adapters;
@@ -19,11 +23,25 @@ class ArticleAggregatorService
         $this->adapters = $adapters;
     }
 
+
+    /**
+     * Registers a new news source adapter.
+     *
+     * @param NewsSourceAdapter $adapter
+     * @return void
+     */
     public function registerAdapter(NewsSourceAdapter $adapter): void
     {
         $this->adapters[] = $adapter;
     }
 
+
+
+    /**
+     * Aggregates articles from all registered adapters.
+     * Returns aggregation statistics.
+     * @return array Stats: total_fetched, total_stored, errors
+     */
     public function aggregateArticles(): array
     {
         $stats = [
@@ -39,10 +57,11 @@ class ArticleAggregatorService
             return $stats;
         }
 
+        //Process each adapter
         foreach ($this->adapters as $adapter) {
             try {
                 Log::info("Starting fetch from {$adapter->getSourceName()}");
-                
+
                 $articles = $adapter->fetchArticles();
                 $stats['total_fetched'] += count($articles);
 
@@ -68,6 +87,13 @@ class ArticleAggregatorService
         return $stats;
     }
 
+
+
+    /**
+     * Stores fetched articles in the database.
+     * @param array $articles Raw article data array
+     * @return int Number stored
+     */
     private function storeArticles(array $articles): int
     {
         $stored = 0;
@@ -76,15 +102,18 @@ class ArticleAggregatorService
             try {
                 DB::beginTransaction();
 
+                //Validate URL
                 if (empty($articleData['url'])) {
                     Log::warning('Article missing URL, skipping', ['data' => $articleData]);
                     DB::rollBack();
                     continue;
                 }
 
+                // Resolve source and category
                 $source = $this->getOrCreateSource($articleData['source_name']);
                 $category = $this->getOrCreateCategory($articleData['category']);
 
+                //Update or create article
                 $article = Article::updateOrCreate(
                     ['external_id' => $articleData['external_id']],
                     [
@@ -115,6 +144,13 @@ class ArticleAggregatorService
         return $stored;
     }
 
+
+    /**
+     * Retrieves or creates a Source model by name (uses slug for uniqueness).
+     *
+     * @param string $name Source name
+     * @return Source
+     */
     private function getOrCreateSource(string $name): Source
     {
         return Source::firstOrCreate(
@@ -123,6 +159,13 @@ class ArticleAggregatorService
         );
     }
 
+
+    /**
+     * Retrieves or creates a Category model by name (uses slug for uniqueness).
+     *
+     * @param string $name Category name
+     * @return Category
+     */
     private function getOrCreateCategory(string $name): Category
     {
         return Category::firstOrCreate(

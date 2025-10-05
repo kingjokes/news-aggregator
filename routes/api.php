@@ -6,8 +6,12 @@ use App\Http\Controllers\Api\HealthCheckController;
 use App\Http\Controllers\Api\SourceController;
 use Illuminate\Support\Facades\Route;
 
+
+//check the server status
 Route::get('health', [HealthCheckController::class, 'index']);
 
+
+//api routes for the articles fetched
 Route::prefix('v1')->group(function () {
     
     Route::prefix('articles')->group(function () {

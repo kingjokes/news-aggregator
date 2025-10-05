@@ -23,6 +23,7 @@ class NewYorkTimesAdapter implements NewsSourceAdapter
     public function fetchArticles(int $limit = 100): array
     {
         try {
+            //Fetch articles 
             $response = $this->client->get("{$this->baseUrl}/search/v2/articlesearch.json", [
                 'query' => [
                     'api-key' => $this->apiKey,
@@ -38,13 +39,16 @@ class NewYorkTimesAdapter implements NewsSourceAdapter
                 return [];
             }
 
+            //Limit and transform articles
             $articles = array_slice($data['response']['docs'] ?? [], 0, $limit);
+
 
             return array_map(function ($article) {
                 return $this->transformArticle($article);
             }, $articles);
 
         } catch (GuzzleException $e) {
+            // Log Guzzle-specific errors
             Log::error('NYT API fetch error: ' . $e->getMessage(), [
                 'code' => $e->getCode(),
                 'source' => $this->getSourceName()
@@ -61,8 +65,11 @@ class NewYorkTimesAdapter implements NewsSourceAdapter
         return 'New York Times';
     }
 
+    //Transforms raw NYT article data into standardized format.
     private function transformArticle(array $article): array
     {
+
+        //Extract first valid image URL
         $imageUrl = null;
         if (!empty($article['multimedia'])) {
             foreach ($article['multimedia'] as $media) {
@@ -73,6 +80,7 @@ class NewYorkTimesAdapter implements NewsSourceAdapter
             }
         }
 
+        // Extract author
         $author = 'New York Times';
         if (!empty($article['byline']['original'])) {
             $author = str_replace('By ', '', $article['byline']['original']);
